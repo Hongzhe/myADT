@@ -3,19 +3,6 @@
 
 #include "dList.h"
 
-/*
-typedef struct node {
-    struct node* prev;
-    struct node* next; 
-    void* value;
-} node;
-
-typedef struct List {
-    node* head;
-    node* tail;
-    int size;
-} List;
-*/
 
 List* init_list(void)
 {
@@ -59,7 +46,6 @@ void insert_at_tail(List* list, void* val)
     if(list->tail == NULL) {
         list->tail = new;
         list->head = new;
-        printf("add first item into list\n");
     } else {
         list->tail->next = new;
         new->prev = list->tail;
@@ -109,6 +95,9 @@ node* remove_at_tail(List* list) {
     return tmp;
 }
 
+/**
+ * To find out if the list contains a specific node
+*/
 int contains(List* list, int(*cmp)(const void*, const void*), void* b) {
     int result = 0;
     for(node* current = list->head; current != NULL; current = current->next) {
@@ -129,6 +118,9 @@ void print_list(List* list) {
     printf("\n");
 }
 
+/*
+ * A sample compare function
+*/
 int compare(const void* a, const void*b)
 {
     const int* ai = (int*)a;
@@ -138,34 +130,3 @@ int compare(const void* a, const void*b)
     return 0;
 }
 
-int main(void)
-{
-    List* list = init_list();
-    int a = 1;
-    int b = 2;
-    int c = 3;
-    int d = 4;
-    int e = 11;
-    insert_at_tail(list, (void*)&a);
-    insert_at_tail(list, (void*)&b);
-    insert_at_tail(list, (void*)&c);
-    insert_at_head(list, (void*)&d);
-    insert_at_head(list, (void*)&e);
-    print_list(list);    
-    int x = 4;
-    int result = contains(list, compare, (void*)&x);
-    printf("if list contains %d\n", result);
-    int xx = 11;
-    remove_node(list, compare,(void*)&xx);
-    print_list(list);
-    /* node* t = remove_at_tail(list);   
-    printf("%d\n", *(int*)t->value);
-    print_list(list);
-    node* t1 = remove_at_head(list);
-    printf("%d\n", *(int*)t1->value);
-    print_list(list);
-    */
-    free_list(list);
-    //print_list(list);
-    return 0;
-}

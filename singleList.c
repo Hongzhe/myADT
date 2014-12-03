@@ -1,12 +1,6 @@
 #include <stdlib.h>
 #include "singleList.h"
 
-/*
-typedef struct node {
-    int value;
-    struct node* next;
-}node;
-*/
 node* init_list(void) {
     node* head = malloc(sizeof(node*));
     head->next = NULL;
@@ -15,6 +9,13 @@ node* init_list(void) {
     return head;
 }
 
+void free_list(node* head) {
+    while(head != NULL) {
+        node* cur = head;
+        free(head);
+        head = cur;
+    }
+}
 void insert_at_head(node** head, int val)
 {
     node* new = malloc(sizeof(node*));
@@ -25,7 +26,8 @@ void insert_at_head(node** head, int val)
 }
 
 /**
- * Inspired by coolshell 
+ * Inspired by a article post on coolshell
+ * http://coolshell.cn/articles/8990.html
  */
 void remove_node(node** head, int val)
 {
