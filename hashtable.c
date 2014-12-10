@@ -1,3 +1,9 @@
+/**
+ * This is a navi implementation of hashtable. This hashtable use linear probing to 
+ * handle collosion. The hash function used is listed in hashFunctions.h.
+ * This kind of hashtable doesn't consider the rehash issue. This feautre will be addded later.
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -44,12 +50,14 @@ void free_table(hashtable* table) {
     free(table->container);
 }
 
+
 int get_index(char*key, int capacity) {
     long hash = ELFHash(key);
     int index = hash % capacity;
 
     return index; 
 }
+
 int matched(hashtable* table, char* key, int index) {
     entry** entries = table->container;
     int matched = 0;
@@ -57,6 +65,11 @@ int matched(hashtable* table, char* key, int index) {
         matched = 1;
     }
     return matched;
+}
+
+
+void set_deleted_flag(hashtable* table, int index) {
+    table->container[index]->deleted &= 0;
 }
 
 void insert_entry(hashtable* table, char* key, void* value) {
@@ -67,6 +80,7 @@ void insert_entry(hashtable* table, char* key, void* value) {
     new->value = value;
     if(entries[index]->pair->key == NULL || entries[index]->deleted == 1) {
         entries[index]->pair = new;
+        reset_deleted_flag(table, index);
     } else {
         int capacity = table->capacity;
         int prob;
@@ -75,8 +89,9 @@ void insert_entry(hashtable* table, char* key, void* value) {
         else 
             prob = index + 1;
         while(prob > -1 && prob != index) {
-            if(entries[prob]->pair->key == NULL) {
+            if(entries[prob]->pair->key == NULL || entries[prob]->deleted == 1) {
                 entries[prob]->pair = new;
+                reset_deleted_flag(table, prob);
                 prob = -1;
             } else {
                 if(prob == capacity)
@@ -102,6 +117,9 @@ void* look_up(hashtable* table, char* key) {
         else 
             prob = index + 1;
         while(prob != -1 && prob != index) {
+            if(entries[prob]->pair->key == NULL && entries[prob]->deleted = 1) {
+                return NULL;
+            }
             if(matched(table, key, prob)) {
                 return entries[prob]->pair->value;
             } else {
@@ -115,6 +133,9 @@ void* look_up(hashtable* table, char* key) {
     return NULL;
 }
 
+
+/** Delete a entry. If the entry is exist,return 0. otherwise, return -1
+ */
 int delete_entry(hashtable* table, char* key)
 {
     int status = -1;
