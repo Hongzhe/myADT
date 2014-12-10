@@ -1,6 +1,6 @@
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "hashFunctions.h"
 
 #define DEFAULT_SIZE 100
@@ -21,118 +21,153 @@ typedef struct hashtable {
     int capacity;
 } hashtable;
 
-hashtable* create_new(void) {
+
+hashtable* init_hashtable(int capacity) {
     hashtable* table = malloc(sizeof(hashtable*));
-    table->capacity = DEFAULT_SIZE;
-    table->container = malloc(sizeof(entry*) * table->capacity);
-    for(int i = 0; i < table->capacity; i++) {
+    table->container = malloc(sizeof(entry*)*DEFAULT_SIZE);
+    for(int i = 0 ; i < DEFAULT_SIZE; i++) {
         table->container[i] = malloc(sizeof(entry*));
         table->container[i]->pair = malloc(sizeof(pair*));
         table->container[i]->deleted = 0;
-    
     }
     table->size = 0;
-
+    table->capacity = DEFAULT_SIZE;
+    
     return table;
 }
 
-pair* create_entry(char* key, void* value) {
-    //entry* new = malloc(sizeof(entry*));
-    pair* newpair = malloc(sizeof(pair*));
-    newpair->key = key;
-    newpair->value = value;
+void free_table(hashtable* table) {
+    int capacity = table->capacity;
+    for(int i = 0; i < capacity; i++) {
+        free(table->container[i]);
+    }
+    free(table->container);
+}
 
-    return newpair;
+int get_index(char*key, int capacity) {
+    long hash = ELFHash(key);
+    int index = hash % capacity;
+
+    return index; 
+}
+int matched(hashtable* table, char* key, int index) {
+    entry** entries = table->container;
+    int matched = 0;
+    if( entries[index]->pair->key != NULL && strcmp(entries[index]->pair->key, key) == 0) {
+        matched = 1;
+    }
+    return matched;
 }
 
 void insert_entry(hashtable* table, char* key, void* value) {
-    long hash = ELFHash(key);
-    int index = hash % table->capacity;
-    pair* new = create_entry(key, value);
-
-    entry** container = table->container;
-    if((container[index])->pair->key == NULL) { // new key
-        (container[index])->pair = new;
-    } else { // collision happened
-        int prob = index + 1;
-        int insert_ok = 0;
-        for(;prob % table->capacity != index; prob ++) {
-            if((*container + prob)->pair->key == NULL) {
-                (*container + prob)->pair = new;
-                insert_ok = 1;
-                break;
-            }
-        } 
-        if(insert_ok == 0) {
-            fprintf(stderr, "need resize the table\n");
-        }// need go back to handle the resize issue.
-    }
-    table->size ++;
-}
-
-int get_index(hashtable* table, char* key) {
-    long hash = ELFHash(key);
-    int index = hash % table->capacity;
-
-    return index;
-}
-
-int is_match(hashtable* table, char* key, int index) {
-    int matched = 0;
-    if(table->container[index]->pair->key != NULL &&
-            strcmp(table->container[index]->pair->key, key) == 0) {
-        matched = 1;
-    }
-
-    return matched; 
-}
-void* look_up(hashtable* table, char* key) {
-    long hash = ELFHash(key);
-    int index = hash % table->capacity;
-    void* result = NULL;
-    entry** container = table->container;
-    if(container[index]->pair->key != NULL &&
-            strcmp(container[index]->pair->key, key) ==0 ) {
-        result = container[index]->pair->value;
+    int index = get_index(key, table->capacity);
+    entry** entries = table->container;
+    pair* new = malloc(sizeof(pair*));
+    new->key = key;
+    new->value = value;
+    if(entries[index]->pair->key == NULL || entries[index]->deleted == 1) {
+        entries[index]->pair = new;
     } else {
-        int capacity =  table->capacity;
-        for(int prob = index + 1; prob % capacity != index; prob++) {
-            if(container[prob]->pair->key != NULL && 
-                    strcmp(container[prob]->pair->key, key) == 0) {
-                result = container[prob]->pair->value;
+        int capacity = table->capacity;
+        int prob;
+        if(index == capacity -1)
+            prob = 0;
+        else 
+            prob = index + 1;
+        while(prob > -1 && prob != index) {
+            if(entries[prob]->pair->key == NULL) {
+                entries[prob]->pair = new;
+                prob = -1;
+            } else {
+                if(prob == capacity)
+                    prob = 0;
+                else 
+                    prob++;
             }
-        }  
-    }
-
-    return result;
-}
-
-void delete_entry(hashtable* table, char* key) {
-    int index = get_index(table, key);
-    int matched = is_match(table, key, index);
-    if(matched) {
-        table->container[index]->pair->key = NULL;  //need to free do it later
-        table->container[index]->deleted = 1;
-        table->size --;   
-    } else {
-        for(int prob = index+1; prob % table->capacity != index; prob++) {
-            matched = is_match(table, key, prob);
-            if(matched) {
-                table->container[prob]->pair->key = NULL;  //need to free do it later
-                table->container[prob]->deleted = 1;
-                table->size--;   
-                break;
-            } 
         }
     }
+    table->size++;
 }
 
+void* look_up(hashtable* table, char* key) {
+    int index = get_index(key, table->capacity);
+    entry** entries = table->container;
+    if(entries[index]->pair->key != NULL && strcmp(entries[index]->pair->key, key) == 0) {
+        return entries[index]->pair->value;
+    } else {
+        int prob;
+        int capacity = table->capacity;
+        if(index == capacity)
+            prob = 0;
+        else 
+            prob = index + 1;
+        while(prob != -1 && prob != index) {
+            if(matched(table, key, prob)) {
+                return entries[prob]->pair->value;
+            } else {
+               if(prob == (capacity -1))
+                   prob = 0;
+               else
+                   prob++;
+            }
+        }
+    }
+    return NULL;
+}
+
+int delete_entry(hashtable* table, char* key)
+{
+    int status = -1;
+    int index = get_index(key, table->capacity);
+    entry** entries = table->container;
+    if(entries[index]->pair->key != NULL &&
+            strcmp(entries[index]->pair->key, key) == 0) {
+        entries[index]->pair->key = NULL;
+        entries[index]->deleted = 1;
+        status = 0;
+    } else {
+        int prob;
+        int capacity = table->capacity;
+        if(index == capacity - 1)
+            prob = 0;
+        else 
+            prob = index + 1;
+        while(prob != -1 && prob != index) {
+            if(entries[prob]->pair->key == NULL) {
+                status = -1;
+                break;
+            }
+            if(entries[prob]->pair->key != NULL &&
+                    strcmp(entries[prob]->pair->key, key) == 0) {
+                entries[index]->pair->key = NULL;
+                entries[index]->deleted = 1;
+                status = 0;
+                break;
+            }
+            if(prob == capacity)
+                prob = 0;
+            else
+                prob++;
+        }
+    }
+
+    return status;
+}
 
 int main(int argc, char* argv[]) {
-    hashtable* table = create_new();
-    char* s = "hong";
-    int age = 24;
-    insert_entry(table, s, (void*) &age);
+    hashtable* table = init_hashtable(10);
+    char* key1 = "li";
+    int age1 = 24;
+    char* key2 = "pp";
+    int age2 = 25;
+    insert_entry(table, key1, (void*)&age1);
+    insert_entry(table, key2, (void*)&age2);
 
+    int res1 = *(int*) look_up(table, key1);
+    int res2 = *(int*) look_up(table, key2);
+    
+    delete_entry(table, key1);
+    
+    printf("res1 is %d \n res2 is %d\n", res1, res2);
     return 0;
 }
