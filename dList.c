@@ -29,7 +29,9 @@ void insert_at_head(List* list, void* val)
 
     if(list->head == NULL) {
         list->head = new;
+        list->head->next = list->tail;
         list->tail = new;
+        list->tail->prev = list->head;
     } else {
         list->head->prev = new;
         new->next = list->head;
@@ -45,7 +47,9 @@ void insert_at_tail(List* list, void* val)
 
     if(list->tail == NULL) {
         list->tail = new;
+        list->tail->prev = list->head;
         list->head = new;
+        list->head->next = list->tail;
     } else {
         list->tail->next = new;
         new->prev = list->tail;
@@ -58,7 +62,7 @@ void insert_at_tail(List* list, void* val)
 node* remove_node(List* list, int(*cmp)(const void*, const void*), void* b)
 {
     node* current = list->head;
-    node* prev = NULL;
+    //node* prev = NULL;
     while(current != NULL) {
         if(cmp(current->value, b)) {
             if(current->next == NULL) {
@@ -80,7 +84,15 @@ node* remove_node(List* list, int(*cmp)(const void*, const void*), void* b)
 }
 
 node* remove_at_head(List* list) {
+
     node* tmp = list->head;
+    if(list->size == 1) {
+        list->head = NULL;
+        list->tail = NULL;
+        list->size--;
+        return tmp;
+    }
+    
     list->head = tmp->next;
     list->head->prev = NULL;
     list->size--;
@@ -89,6 +101,12 @@ node* remove_at_head(List* list) {
 
 node* remove_at_tail(List* list) {
     node* tmp = list->tail;
+    if(list->size == 1) {
+        list->head = NULL;
+        list->tail = NULL;
+        list->size--;
+        return tmp;
+    }
     tmp->prev->next = NULL;
     list->tail = tmp->prev;
     list->size--;
@@ -129,4 +147,5 @@ int compare(const void* a, const void*b)
         return 1;
     return 0;
 }
+
 
