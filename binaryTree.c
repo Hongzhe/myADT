@@ -63,6 +63,7 @@ status insert_node(treeNode *new, treeNode* p)
  * 1. the node is a leaf node.
  * 2. the node has either left or right child.
  * 3. the node has both left and right chiildren.
+ * About to take care removing the root node.
  */
 void delete_node(treeNode *target) {
     treeNode *parent = target->parent;
@@ -117,12 +118,19 @@ treeNode* search_left_greatest(treeNode* start) {
     return result;
 }
 
+/**
+ * To find out if a node is left or right child of parent.
+ * Return 1 if the node is left child. 
+ */
 int left_or_right(treeNode* node) {
     int result;
     result = node->parent->key > node->key ? 1:0;
     return result;
 }
 
+/**
+ * To determine is a node is a leaf node
+ */
 int is_leaf(treeNode *node) {
     if(node->left ==NULL && node->right == NULL) 
         return 1;
