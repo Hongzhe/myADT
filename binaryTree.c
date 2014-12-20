@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include "dList.h"
 
 typedef struct treeNode {
     int key;
-    char* value;
-    struct treeNode *parent;
+    void* value;
+    struct treeNode* parent;
     struct treeNode *left;
     struct treeNode *right;
 } treeNode;
@@ -16,149 +17,126 @@ typedef enum {
     WRONG = 2
 } status;
 
-treeNode* search_left_greatest(treeNode* start);
-int is_leaf(treeNode *node);
-int left_or_right(treeNode *node);
-void replace_deleted_node(treeNode *target, treeNode *origin);
 
-treeNode* new_node(int key, char* value, treeNode* parent) 
+void binary_search(int key, treeNode **tree, treeNode **parent, treeNode **target);
+treeNode* search_left_greatest(treeNode* start);
+int left_or_right(treeNode *node, int value);
+
+
+int left_or_right(treeNode *node, int key) {
+    int result;
+    result = node->key > key ? 1:0;
+    return result;
+}
+
+treeNode* new_node(int key, void* value) 
 {
     treeNode* new = malloc(sizeof(*new));
     new->key = key;
     new->value = value;
-    new->parent = parent;
     new->left = NULL;
     new->right = NULL;
 
     return new;
 }
 
-status insert_node(treeNode *new, treeNode* p)
+void insert_new(treeNode **start, int key, void *value)
 {
-    treeNode* parent = p;
-    if(parent == NULL)
-        return WRONG;
-
-    if(p->key > new->key) {
-        if(parent->left == NULL)
-            parent->left = new;
-        else {
-            parent = parent->left;
-            insert_node(new, parent);
-        }
+    treeNode *tmp;
+    if(*start == NULL) {
+        tmp = new_node(key, value);
+        *start = tmp;
+    } else if(left_or_right(*start, key)) {
+        insert_new( &((*start)->left), key, value);
     } else {
-        if(parent->right == NULL)
-            parent->right = new;
-        else {
-            parent = parent->right;
-            insert_node(new, parent);
-        }
+        insert_new(&((*start)->right), key, value);
     }
-
-    return GOOD;
 }
 
-/** 
- * Remove a node from binary search Tree. Three situation
- * 1. the node is a leaf node.
- * 2. the node has either left or right child.
- * 3. the node has both left and right chiildren.
- * About to take care removing the root node.
- */
-void delete_node(treeNode *target) {
-    treeNode *parent = target->parent;
-    if(target->left == NULL && target->right==NULL) 
-        if(parent->value > target->value)
-            parent->left = NULL;
-        else
+int remove_tree_node(treeNode **tree, int key)
+{
+    treeNode *parent , *target, *cur;
+    parent = target = NULL;
+    binary_search(key, tree, &parent, &target); 
+    if(target == NULL) {
+        fprintf(stderr, "Not Founded\n");
+        return -1;
+    }
+    /* node to be deleted has no child*/
+    if(target->left == NULL && target->right ==NULL) {
+        if(parent->right == target)
             parent->right = NULL;
-    else if(target->left == NULL) { 
-        if(parent->key > target->key)
-            parent->left = target->right;
         else
-            parent->right = target->right;
-    } else if(target->right == NULL){        //right child is null
-        if(parent->key < target->key)
+            parent->left = NULL;
+
+        free(target);
+        return 0;
+    }
+    if(target->left != NULL && target->right == NULL) {
+        if(parent->right == target)
             parent->right = target->left;
         else
-            parent->left = target->left; 
-    } else {                                //target node has two children.
-        treeNode* replacement = search_left_greatest(target);
-        replace_deleted_node(replacement, target);
+            parent->left = target->left;
+        free(target);
+        return 0;
+    } else if(target->left == NULL && target->right != NULL) {
+         if(parent->right == target)
+            parent->right = target->right;
+        else
+            parent->left = target->right;
+        free(target);
+        return 0;      
     }
-    free(target);
-}
-
-void replace_deleted_node(treeNode* replacement, treeNode *origin) {
-     if(left_or_right(origin)) {
-        origin->parent->left = replacement;
-    }
-    else { 
-       origin-> parent->right = replacement;
-    }
-    replacement->left = origin->left;
-    origin->left->parent = replacement;
-    replacement->right = origin->right;
-    origin->right->parent= replacement;
-}
-
-treeNode* search_left_greatest(treeNode* start) {
-    List* list = init_list();
-    treeNode *result;
-    insert_at_head(list, start->left);
-    while(list->size != 0) {
-        treeNode* node = (treeNode*) remove_at_tail(list)->value;
-        if(is_leaf(node)) {
-            result = node;
-            break;
+    /* node to be deleted has two children */
+    if(target->left != NULL && target->right != NULL) {
+        cur = target->left;
+        while(cur->right != NULL) {
+            cur = cur->right;
         }
-        insert_at_head(list, (void*)node->right);
+        cur->key = target->key;
+        cur->value = target->value;
+        cur->left = target->left;
+        cur->right = target->right;
+        target = cur;
     }
-    free(list);
-    return result;
-}
-
-/**
- * To find out if a node is left or right child of parent.
- * Return 1 if the node is left child. 
- */
-int left_or_right(treeNode* node) {
-    int result;
-    result = node->parent->key > node->key ? 1:0;
-    return result;
-}
-
-/**
- * To determine is a node is a leaf node
- */
-int is_leaf(treeNode *node) {
-    if(node->left ==NULL && node->right == NULL) 
-        return 1;
     return 0;
 }
 
-void search(int key, treeNode* start, char** result) {
-    List* list = init_list();
-    insert_at_head(list, start);
-    while(list->size !=0) {
-        treeNode *cur = (treeNode*)remove_at_head(list)->value;
-        if(cur == NULL)
-            continue;
+void binary_search(int key, treeNode **tree, treeNode **parent, treeNode **target)
+{
+    treeNode *cur = *tree;
+    while(cur != NULL) {
         if(key == cur->key) {
-            *result = cur->value;
-            fprintf(stderr, "got it %s\n", *result);
-            break;
-        }
-        else if(key > cur->key) {
-            insert_at_head(list, cur->right);
+            *target = cur;
+            return;
+        } 
+        *parent = cur;
+        if(left_or_right(cur, key)) {
+            cur = cur->left;
         } else {
-            insert_at_head(list, cur->left);
+            cur = cur->right;
         }
     }
+    *target = NULL;
+}
+
+void free_tree(treeNode** root)
+{
+    List *list = init_list();
+    insert_at_tail(list, *root);
+    while(list->size != 0) {
+        treeNode *node =(treeNode*) (remove_at_head(list)->value);
+        if(node == NULL) {
+            continue;
+        }
+        insert_at_tail(list, node->left);
+        insert_at_tail(list, node->right);
+        free(node);
+    } 
     free(list);
 }
 
-void print_tree(treeNode *start)
+void print_tree_level_order(treeNode *start)
 {
     List* list = init_list();
     insert_at_tail(list, (void*)start);
@@ -167,35 +145,55 @@ void print_tree(treeNode *start)
         node* n = remove_at_head(list);
         treeNode* node = (treeNode*)n->value;
         if(node == NULL) {
-            fprintf(stderr, "%d ", 0);
+            //fprintf(stderr, "%d ", 0);
             continue;
         }
         fprintf(stderr, "%d ", node->key);
         insert_at_tail(list, (void*)node->left);
         insert_at_tail(list, (void*)node->right);
     }
-
-    free(list);
+    free_list(list);
 }
 
+void print_tree_preorder(treeNode *tree)
+{
+    if(tree == NULL) {
+        return;
+    }
+    printf("%d ", tree->key);
+    print_tree_preorder(tree->left);
+    print_tree_preorder(tree->right);
+}
 
 int main(int argc, char* argv[])
 {
+    treeNode *root = NULL;
+    char* r_value = "li";
+    char* value1 = " hong";
+    char* value2 = "zhe";
+    char* value3 = "binary";
+    char* value4 = "search";
+    insert_new(&root, 9, (void*) r_value);
+    insert_new(&root, 4, (void*) value1);
+    insert_new(&root, 2, (void*) value2);
+    insert_new(&root, 15, (void*) value3);
+    insert_new(&root, 12, (void*) value4);
+    print_tree_preorder(root);
+    printf("\n");
+    print_tree_level_order(root);
+    printf("\n");
+    treeNode *result, *parent;
+    result = NULL;
+    binary_search(4, &root, &parent, &result);
+    if(result != NULL) 
+        printf("key %d value: %s\n", result->key, (char*)result->value);
     
-    treeNode *root = new_node(10,"li",NULL);
-    treeNode *n1 = new_node(1,"hong", root);
-    treeNode *n2 = new_node(12,"zhe", root);
-    treeNode *n3 = new_node(2, "binary", root);
-    treeNode *n4 = new_node(13, "tree", root);
-    insert_node(n1, root);
-    insert_node(n2, root);
-    insert_node(n3, root);
-    insert_node(n4, root);
-    print_tree(root);
-    char* result = malloc(sizeof(char) * 20);
-    search(13, root, &result);
-    fprintf(stderr, "key 13 - value: %s\n", result);
+    remove_tree_node(&root, 4);
+    print_tree_level_order(root);
+    printf("\n");
+    remove_tree_node(&root, 2);
+    print_tree_level_order(root);
     
-    free(result);
+    free_tree(&root);
     return 0;
 }
