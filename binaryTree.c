@@ -1,33 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
+
+#include "binaryTree.h"
 #include "dList.h"
 
-typedef struct treeNode {
-    int key;
-    void* value;
-    struct treeNode* parent;
-    struct treeNode *left;
-    struct treeNode *right;
-} treeNode;
 
-typedef enum {
-    GOOD = 0,
-    WRONG = 2
-} status;
-
-
-void binary_search(int key, treeNode **tree, treeNode **parent, treeNode **target);
-treeNode* search_left_greatest(treeNode* start);
-int left_or_right(treeNode *node, int value);
-
-
-int left_or_right(treeNode *node, int key) {
-    int result;
-    result = node->key > key ? 1:0;
-    return result;
-}
 
 treeNode* new_node(int key, void* value) 
 {
@@ -136,6 +114,12 @@ void free_tree(treeNode** root)
     free(list);
 }
 
+int left_or_right(treeNode *node, int key) {
+    int result;
+    result = node->key > key ? 1:0;
+    return result;
+}
+
 void print_tree_level_order(treeNode *start)
 {
     List* list = init_list();
@@ -192,8 +176,9 @@ int main(int argc, char* argv[])
     print_tree_level_order(root);
     printf("\n");
     remove_tree_node(&root, 2);
-    print_tree_level_order(root);
-    
+    print_tree_level_order(root); 
     free_tree(&root);
+    printf("\n");
+    print_tree_preorder(root);
     return 0;
 }
