@@ -3,9 +3,9 @@ myADT
 
 My implementation of data structure and algorithm.
 The data structure include:
-  single linked list
-  double linked list
-  hashtable
-  binary search tree
+  - single linked list
+  - double linked list
+  - hashtable
+  - binary search tree
   
-(Continue)
+(To be Continued)
