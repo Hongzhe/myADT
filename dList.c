@@ -112,7 +112,17 @@ node* remove_at_tail(List* list) {
     list->size--;
     return tmp;
 }
-
+node* search_node(List* list, void* val)
+{
+    node* tmp = list->head;
+    while(tmp != NULL) {
+        if(*(int*)tmp->value == *(int*)val){
+            return tmp;
+        }
+        tmp = tmp->next;
+    }
+    return NULL;
+}
 /**
  * To find out if the list contains a specific node
 */
