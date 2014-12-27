@@ -2,7 +2,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#define DEFAULT_SIZE 10
+#define DEFAULT_SIZE 3
+
+#define LEFT_INDEX(a) 2*a+1
+#define RIGHT_INDEX(a) 2*a+2
+#define PARENT_INDEX(a) (a-1)/2
 
 typedef struct heap_node {
     int key;
@@ -11,7 +15,6 @@ typedef struct heap_node {
 
 typedef struct heap_t {
     heap_node** heap;
-    heap_node* last;
     int capacity;
     int size;
 } heap_t;
@@ -22,10 +25,8 @@ heap_t* init_heap(void)
     new->heap = malloc(DEFAULT_SIZE*sizeof(heap_node));
     new->capacity = DEFAULT_SIZE;
     for(int i = 0 ; i < new->size; i++) {
-        //new->heap[i] = malloc(sizeof(heap_node));
-        new->heap[i] = NULL;
+        (new->heap)[i] = NULL;
     }
-    new->last = NULL;
     new->size = 0;
     return new;
 }
@@ -39,21 +40,17 @@ heap_node* new_node(int key, void* value)
     return node;
 }
 
-int get_parent(int index) { return (index - 1)/2;}
-int left_index(int index) { return 2*index + 1;}
-int right_index(int index){ return 2*index + 2;}
-
-void swap_node(heap_t* heap, int index, int parent)
+void swap_node(heap_t* heap, int index, int target)
 {
-    heap_node *tmp = heap->heap[parent];
-    heap->heap[parent] = heap->heap[index];
+    heap_node *tmp = heap->heap[target];
+    heap->heap[target] = heap->heap[index];
     heap->heap[index] = tmp;
 }
 
 void bubble_up(heap_t* heap, int index) {
     int parent;
     while(index > 0) {
-        parent = get_parent(index);
+        parent = PARENT_INDEX(index);
         if(heap->heap[parent]->key < heap->heap[index]->key)
             break;
         swap_node(heap, index, parent);
@@ -63,22 +60,31 @@ void bubble_up(heap_t* heap, int index) {
 
 void insert_new(heap_t* heap, int key, void* value)
 {
+    
     heap_node *new = new_node(key, value); 
     int index = heap->size;
     heap->heap[index] = new;
     bubble_up(heap, index);
-    heap->size++;
-}
+    heap->size++; 
 
+    if(heap->size == heap->capacity) {
+        heap->capacity *= 2;
+        heap->heap = realloc(heap->heap, heap->capacity);
+        if(heap->heap == NULL) {
+            fprintf(stderr, "realloc failed\n");
+            exit(1);
+        }
+    }
+}
 void bubble_down(heap_t *heap) 
 {
    int cur = 0;
-   while (left_index(cur) < heap->size) {
-       int left = left_index(cur);
-       int right = right_index(cur);
+   while (LEFT_INDEX(cur) < heap->size) {
+       int left = LEFT_INDEX(cur);
+       int right = RIGHT_INDEX(cur);
        int small = left;
        if(right < heap->size) {
-           if(heap->heap[left] > heap->heap[right])
+           if(heap->heap[left]->key > heap->heap[right]->key)
                small = right;
        }
        if(heap->heap[small]->key >= heap->heap[cur]->key) 
@@ -90,9 +96,9 @@ void bubble_down(heap_t *heap)
 
 void remove_min(heap_t *heap)
 {
-    heap->heap[0] = heap->heap[heap->size-1];
-    heap->heap[heap->size] = NULL;
-    heap->size--;
+    heap->heap[0] = heap->heap[heap->size - 1];
+    heap->heap[heap->size - 1] = NULL;
+    heap->size --;
     bubble_down(heap);
 }
 
@@ -101,14 +107,21 @@ int main(void)
     char* v0 = "li";
     char* v1 = "hong";
     char* v2 = "zhe";
+    char* v3 = "heap";
+    char* v4 = "binary";
     heap_t *heap = init_heap();
     insert_new(heap, 9, (void*)v0);
     insert_new(heap, 5, (void*)v1);
     insert_new(heap, 6, (void*)v2);
+    insert_new(heap, 7, (void*)v3);
+    insert_new(heap, 12,(void*)v4);
+    
     if((heap)->heap[0])
         printf("%d %s\n", (heap->heap)[0]->key, (char*)heap->heap[0]->value);
-    remove_min(heap);
-    if((heap)->heap[0])
-        printf("%d %s\n", (heap->heap)[0]->key, (char*)heap->heap[0]->value);
+    printf("5th is %d\n", heap->heap[4]->key);
+    
+    /*remove_min(heap);*/
+    if((heap)->heap[2])
+        printf("%d %s\n", (heap->heap)[2]->key, (char*)heap->heap[2]->value);
     return 0;
 }
