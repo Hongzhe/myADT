@@ -7,5 +7,6 @@ The data structure include:
   - double linked list
   - hashtable
   - binary search tree
+  - min heap
   
 (To be Continued)
