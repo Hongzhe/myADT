@@ -158,4 +158,46 @@ int compare(const void* a, const void*b)
     return 0;
 }
 
+/** Return a iterator 
+ * if direct is 0, the iterator start from the head of list;
+ * if direct is 1, the iterator start from the tail of list;
+ */
+listIter* create_iterator(List *list, int direct)
+{
+    listIter *iter = malloc(sizeof(iter));
+    iter->direction = direct;
+    if(direct) {
+        iter->next = list->tail;
+    } else {
+        iter->next = list->head;
+    }
+
+    return iter;
+}
+
+void list_rewind(List *list, listIter *iter)
+{
+    iter->next = list->head;
+    iter->direction = ITER_AT_HEAD;
+}
+
+void list_rewind_tail(List *list, listIter *iter)
+{
+    iter->next = list->tail;
+    iter->direction = ITER_AT_TAIL;
+}
+
+/** Return the pointer to next node in the iterator or NULL is there is no node in the list.
+ */ 
+node* iter_next(listIter *iter)
+{
+    node *cur = iter->next;
+    if(cur != NULL) {
+        if(iter->direction) 
+            iter->next = cur->prev;
+        else
+            iter->next = cur->next;
+    }
+    return cur;
+}
 
